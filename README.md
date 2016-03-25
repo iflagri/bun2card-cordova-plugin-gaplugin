@@ -1,148 +1,97 @@
-# GAPlugin
+google-analytics-plugin
+=======================
 
-> Google Analytics plugin for iOS and Android. This allows you to post usage information to your Google Analytics account.
+Cordova (PhoneGap) 3.0+ Plugin to connect to Google's native Universal Analytics SDK
 
-## Preparation:
-Before you can begin collecting metrics data, you need to set up a GoogleAnalytics Mobile App account so you can view them. When you do so, you will obtain an app tracking id which we'll use during session initialization. Start by going to the [Google Analytics](http://www.google.com/analytics/features/mobile-app-analytics.html) site and click on the **Create an Account** button. Once signed in, click on the **Admin** button and the **+ New Account** button under the **Accounts** tab. At the top of the resulting tab, select the **App** button in answer to the **What would you like to track?** query. Fill out the form as appropriate. Complete instructions can be found [here](http://www.google.com/analytics/features/mobile-app-analytics.html).
+Prerequisites:
+* A Cordova 3.0+ project for iOS and/or Android
+* A Mobile App property through the Google Analytics Admin Console
+* (Android) Google Play Services SDK installed via [Android SDK Manager](https://developer.android.com/sdk/installing/adding-packages.html)
 
-## Installation:
+#Installing
 
-### local
+This plugin follows the Cordova 3.0+ plugin spec, so it can be installed through the Cordova CLI in your existing Cordova project:
+```bash
+cordova plugin add https://github.com/danwilson/google-analytics-plugin.git
+```
 
-Add the following feature tag in your config.xml
+This plugin is also available on npm if you are using Cordova 5.0+:
+```bash
+cordova plugin add cordova-plugin-google-analytics
+```
 
-	<feature name="GAPlugin" >
-		< param name="android-package" value="com.adobe.plugins.GAPlugin"/>
-	</feature>
+... OR the Cordova Plugin Registry if you are using a version of Cordova before 5.0 (while it remains open, as it is planning to shut down soon due to the move to npm):
+```bash
+cordova plugin add com.danielcwilson.plugins.googleanalytics
+```
 
-This plugin is based on [plugman](https://github.com/apache/cordova-plugman). to install it to your app,
-simply execute plugman as follows;
+*Important Note* If the latest versions (0.8.0+) of this plugin are not working for you with Android on Cordova 5.0+, please try the suggestions in [Issues 123](https://github.com/danwilson/google-analytics-plugin/issues/123#issuecomment-151145095). Google Play Services has been very confusing to integrate, but in recent months it has been simplified.  This plugin uses the new simpler way (including it as a framework instead of bundling it which can conflict with other plugins bundling it), but if you previously installed this plugin some old files might still be lingering.
 
-	plugman install --platform [PLATFORM] --project [TARGET-PATH] --plugin [PLUGIN-PATH]
+The plugin.xml file will add the Google Analytics SDK files for Android and/or iOS.  Follow [Google's steps](#sdk-files) if you need to update these later.  Also make sure to review the Google Analytics [terms](http://www.google.com/analytics/terms/us.html) and [SDK Policy](https://developers.google.com/analytics/devguides/collection/protocol/policy)
 
-	where
-		[PLATFORM] = ios or android
-		[TARGET-PATH] = path to folder containing your xcode project
-		[PLUGIN-PATH] = path to folder containing this plugin
-		
-For additional info, take a look at the [Plugman Documentation](https://github.com/apache/cordova-plugman/blob/master/README.md)
+If you are not using the CLI, follow the steps in the section [Installing Without the CLI](#nocli)
 
-### PhoneGap Build
+#JavaScript Usage
+In your 'deviceready' handler, set up your Analytics tracker:
+* `window.analytics.startTrackerWithId('UA-XXXX-YY')` where UA-XXXX-YY is your Google Analytics Mobile App property
 
-To use this plugin with PhoneGap Build, add the following plugin reference to your config.xml
+To track a Screen (PageView):
+* `window.analytics.trackView('Screen Title')`
 
-	<gap:plugin name="com.adobe.plugins.gaplugin" />
+To track an Event:
+* `window.analytics.trackEvent('Category', 'Action', 'Label', Value)` Label and Value are optional, Value is numeric
 
-## Usage
-The plugin creates the object `window.plugins.gaPlugin
+To track an Exception:
+* `window.analytics.trackException('Description', Fatal)` where Fatal is boolean
 
-After onDeviceReady, create a local var and startup the plugin like so;
+To track User Timing (App Speed):
+* `window.analytics.trackTiming('Category', IntervalInMilliseconds, 'Variable', 'Label')` where IntervalInMilliseconds is numeric
 
-	var gaPlugin;
+To add a Transaction (Ecommerce)
+* `window.analytics.addTransaction('ID', 'Affiliation', Revenue, Tax, Shipping, 'Currency Code')` where Revenue, Tax, and Shipping are numeric
 
-	function onDeviceReady() {
-		gaPlugin = window.plugins.gaPlugin;
-		gaPlugin.init(successHandler, errorHandler, "UA-12345678-1", 10);
-	}
+To add a Transaction Item (Ecommerce)
+* `window.analytics.addTransactionItem('ID', 'Name', 'SKU', 'Category', Price, Quantity, 'Currency Code')` where Price and Quantity are numeric
 
-To get things rolling you need to call init() when your device ready function fires.
-Init takes 4 arguments;
-	1)	success - a function that will be called on success
-	2)	fail - a function that will be called on error.
-	3)	id - Your Google Analytics account ID of the form; UA-XXXXXXXX-X
-		This is the account ID you were given when you signed up.
-	4)	period - An integer containing the minimum number of seconds
-		between upload of metrics. When metics are logged, they are enqued
-		and are sent out in batches based on this value. You'll want to
-		avoid setting this value too low, to limit the overhead of sending data.
+To add a Custom Dimension
+* `window.analytics.addCustomDimension('Key', 'Value', success, error)`
 
-Example:
-	
-	gaPlugin.init(successHandler, errorHandler, "UA-12345678-1", 10);
-	
-To track an event, call (oddly enough) trackEvent().
-trackEvent takes 6 arguments;
+To set a UserId:
+* `window.analytics.setUserId('my-user-id')`
 
-	1)	resultHandler - a function that will be called on success
-	2)	errorHandler - a function that will be called on error.
-	3)	category - This is the type of event you are sending such as "Button", "Menu", etc.
-	4)	eventAction - This is the type of event you are sending such as "Click", "Select". etc.
-	5)	eventLabel - A label that describes the event such as Button title or Menu Item name.
-	6)	eventValue - An application defined integer value that can mean whatever you want it to mean.
-	
-Example:
-	
-	gaPlugin.trackEvent( nativePluginResultHandler, nativePluginErrorHandler, "Button", "Click", "event only", 1);
+To enable verbose logging:
+* `window.analytics.debugMode()`
 
-TrackEvent covers most of what you need, but there may be cases where you want to pass arbitrary data.
-setVariable() lets you pass values by index (Up to 20, on free accounts).
-For free accounts, each variable is given an index from 1 - 20. Reusing an existing index simply overwrites
-the previous value. Passing an index out of range fails silently, with no data sent. The variables will be sent ONLY for the next trackEvent or trackPage, after which those indexes will be available for reuse.
-setVariable() accepts 4 arguments;
+To enable/disable automatic reporting of uncaught exceptions
+* `window.analytics.enableUncaughtExceptionReporting(Enable, success, error)` where Enable is boolean
 
-	1)	resultHandler - a function that will be called on success
-	2)	errorHandler - a function that will be called on error.
-	3)	index - the numerical index representing one of your variable slots (1-20).
-	4)	value - Arbitrary string data associated with the index.
+#Installing Without the CLI <a name="nocli"></a>
+Copy the files manually into your project and add the following to your config.xml files:
+```xml
+<feature name="UniversalAnalytics">
+  <param name="ios-package" value="UniversalAnalyticsPlugin" />
+</feature>
+```
+```xml
+<feature name="UniversalAnalytics">
+  <param name="android-package" value="com.danielcwilson.plugins.analytics.UniversalAnalyticsPlugin" />
+</feature>
+```
+<a name="sdk-files"></a>
+You also will need to manually add the Google Analytics SDK files:
+* Download the Google Analytics SDK 3.0 for [iOS](https://developers.google.com/analytics/devguides/collection/ios/) and/or [Android](https://developers.google.com/analytics/devguides/collection/android/)
+* For iOS, add the downloaded Google Analytics SDK header files and libraries according to the [Getting Started](https://developers.google.com/analytics/devguides/collection/ios/v3) documentation
+* For Android, add `libGoogleAnalyticsServices.jar` to your Cordova Android project's `/libs` directory and build path
 
-Example:
+#Integrating with Lavaca
+The `lavaca` directory includes a component that can be added to a <a href="http://getlavaca.com">Lavaca</a> project.  It offers a way to use the web `analytics.js` when the app is running in the browser and not packaged as Cordova.
 
-	gaPlugin.setVariable( nativePluginResultHandler, nativePluginErrorHandler, 1, "Purple");
-	
-####Important:
-Variable values are assigned to what Google calls Custom Dimensions in the dashboard. Prior to calling setVariable() in your client for a particular index, you need to create a slot in the GA dashboard. When you do so, you will be able to assign a name for the dimension, its index, and its scope. More info on creating Custom Dimensions can be found [here](https://support.google.com/analytics/answer/2709829?hl=en&ref_topic=2709827).	
-The next event or page view you send after setVariable will contain your variable at Custom Dimension specified by the index value you passed in the setVariable call. This [Example](https://github.com/phonegap-build/GAPlugin/blob/master/Example/index.html) app shows how you might use that next event to specify a label for the variable you just set.
-	
-In addition to events and variables, you can also log page visits with trackPage(). Unlike variables, however, page hits do not require a subsequent call to trackEvent() as they are considered unique events in and of themselves.
-trackPage() takes 3 arguments;
+* Copy `AnalyticsService.js` to your Lavaca project (I create a directory under `js/app` called `data`).
+* In your config files (`local.json`, `staging.json`, `production.js`) create properties called `google_analytics_id` (for the Mobile App UA property) and `google_analytics_web_id` (for the Web UA property) and set the appropriate IDs or leave blank as needed.
+* In any file you want to track screen views or events, require AnalyticsService and use the methods provided.
 
-	1)	resultHandler - a function that will be called on success
-	2)	errorHandler - a function that will be called on error.
-	3)	url - The url of the page hit you are logging.
+```javascript
+var analyticsService = require('app/data/AnalyticsService');
 
-Example:
-
-	gaPlugin.trackPage( nativePluginResultHandler, nativePluginErrorHandler, "some.url.com");
-	
-Finally, when your app shuts down, you'll want to cleanup after yourself by calling exit();
-exit() accepts 2 arguments;
-
-	1)	resultHandler - a function that will be called on success
-	2)	errorHandler - a function that will be called on error.
-Example:
-
-	gaPlugin.exit(nativePluginResultHandler, nativePluginErrorHandler);
-	
-This package includes an Example folder containing an index.html file showing how all of this fits together.
-Note that the contents of Examples does not get installed anywhere by pluginstall. Its just there to provide a usage example.
-
-## More Info
-	
-GAPlugin includes libraries from Google Analytics SDK for iOS and for Android.
-Use of those libraries is subject to [Google Analytics Terms of Service](http://www.google.com/analytics/terms/us.html)
-	
-Also take a look at [Google Analytics Developer Guides](https://developers.google.com/analytics/devguides/)
-
-## License ##
-
-The MIT License
-
-Copyright (c) 2012 Bob Easterday, Adobe Systems
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+analyticsService.trackView('Home');
+```
