@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    id="cordova-plugin-google-analytics"
+    id="bun2card-cordova-plugin-googleanalytics"
     version="0.8.1">
   <engines>
     <engine name="cordova" version=">=3.0.0" />
   </engines>
-  <name>Google Universal Analytics Plugin</name>
+  <name>cordova-plugin-google-analytic for bun2card</name>
   <description>Simple tracking (screens/events) for Google Analytics SDK 3.14 (iOS) and SDK 4.0 (Android)</description>
   <author>Daniel C. Wilson</author>
   <license>MIT License</license>
@@ -69,5 +69,6 @@
         <service android:name="com.google.android.gms.analytics.CampaignTrackingService" />
     </config-file>
     <source-file src="android/UniversalAnalyticsPlugin.java" target-dir="src/com/danielcwilson/plugins/analytics" />
+    <framework src="com.google.android.gms:play-services-analytics:+" />
   </platform>
 </plugin>
